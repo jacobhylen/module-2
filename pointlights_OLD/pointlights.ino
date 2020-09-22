@@ -1,6 +1,5 @@
 enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON}; // Here we make nicknames for the different states our program supports.
 enum ledStates ledState; // We define 'ledState' as type ledStates'
-enum ledStates previousLedState = ledState;
 
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
@@ -8,13 +7,13 @@ unsigned long currentMillis;
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
 int ledPin = 9; // we use pin 9 for PWM
-int p = 0; // use to keep track how often we plot
-int plotFrequency = 3; // how often we plot, every Nth time.
 
 void setup() {
   // put your setup code here, to run once:
   pinMode(ledPin, OUTPUT); // set ledPin as an output.
   Serial.begin(9600); // initiate the Serial monitor so we can use the Serial Plotter to graph our patterns
+  
+
 }
 
 void loop() {
@@ -22,97 +21,83 @@ void loop() {
   compose();
   delay(10);
   analogWrite(ledPin, brightness);
-  currentMillis = millis(); //store the current time since the program started
+
 }
 
 void compose() {
   // this is a state machine which allows us to decouple the various operations from timed loops. 
-  // instead we just switch from state to state when particular conditions are met.
-  // we switch states by calling the changeState() function.
+  // instead we just switch from state to state when particular conditions are met. 
   
   switch (ledState){
 
-
-  
   case INCREASE:
-  changeState(ON);
     brightness = increase_brightness(brightness, 1);
 
-    plot("INCREASING", brightness);
-        
+    Serial.print("INCREASING  ");
+    Serial.println(brightness);
+    
     if (brightness > 250){
-      //ledState = WAVE;
-      changeState(WAVE);
+      ledState = WAVE;
       }
     break;
    
   case DECREASE:
     brightness = decrease_brightness(brightness, 0.5);
-    plot("DECREASING", brightness);
+    
+    Serial.print("DECREASING  ");
+    Serial.println(brightness);
       if (brightness == 0){
-      changeState(OFF);
+      ledState = OFF;
       }
      break;
 
   case WAVE:
-    plot("WAVE", brightness);
-    
-    brightness = sinewave(1000,256,0); // you can tweak the parameters of the sinewave
-    analogWrite(ledPin, brightness);
-    
-    if (currentMillis - startMillis >= 5000){ //change state after 5 secs by comparing the time elapsed since we last change state
-      changeState(DECREASE);
-      }
+    Serial.print("WAVE  ");
+    Serial.println(brightness);
+    doForMs(5000, wavyshine); // this you might want to do for number of pulses, rather than for duration
+    ledState = DECREASE;
     break;
     
   case STAY:
-    plot("STAY", brightness);
+    Serial.print("STAY"  );
+    Serial.println(brightness);
     brightness = brightness;
     break;
 
   case ON:
-    plot("ON", brightness);
+    Serial.print("ON"  );
+    Serial.println(brightness);
     brightness = 255;
-      if (currentMillis - startMillis >= random(500)){ 
-      changeState(OFF);
-      }
     break;
 
   case OFF:
-    plot("OFF", brightness);
-    brightness = 50;
-    if (currentMillis - startMillis >= random(500)){
-      changeState(ON);
-      }
+    Serial.print("OFF"  );
+    Serial.println(brightness);
+    brightness = 0;
+    doAfterMs(5000, goBackOn);
     break;
+    
+  
   }
 }
 
-void changeState(ledStates newState){
-    // call to change state, will keep track of time since last state
-    startMillis = millis();
-    ledState = newState;
+void goBackOn(){
+  ledState=INCREASE;
   }
-  
-void plot(char *state, int brightness){
-    // use this function to plot a graph.
-    // it will normalize the auto-scaling plotter
 
-    if ((p % plotFrequency) == 0){
-      Serial.print(state);
-      Serial.print(", ");
-      Serial.print(brightness);
-      Serial.println(", 0, 300");
-    }
-    p++;
+void wavyshine(){
+  Serial.print("WAVE  ");
+  Serial.println(brightness);
+  brightness = sinewave(1000,256,0); // you can tweak the parameters of the sinewave
+  analogWrite(ledPin, brightness);
   }
 
 int increase_brightness (int brightness, float velocity){
-    return brightness = brightness + 1 * velocity;
+   return brightness = brightness + 1 * velocity;
   }
 
 int decrease_brightness (int brightness, float velocity){
-    return brightness = brightness - 1 * velocity;
+   return brightness = brightness - 1 * velocity;
   }
 
 int sinewave(float duration, float amplitude, int offset){
@@ -123,4 +108,32 @@ int sinewave(float duration, float amplitude, int offset){
     int value = midpoint + midpoint * sin ( period * 2.0 * PI );
     value = value + offset; //offset allows you to move the wave up and down on the Y-axis. Should not exceed the value of amplitude to prevent clipping.
     return value;
+  }
+
+void doForMs(int duration, void (*function)()){
+  // this helper function allows us to execute another function for 'duration' amount of millisecs
+  bool doing = true;
+  startMillis = millis();
+  while(doing){
+    currentMillis = millis();
+    (*function)();
+    if (currentMillis - startMillis >= duration){
+      doing = false;
+      }
+    }
+   
+  }
+
+  void doAfterMs(int duration, void (*function)()){
+  // this helper function allows us to execute another function AFTER a 'duration' amount of millisecs
+  bool doing = true;
+  startMillis = millis();
+  while(doing){
+    currentMillis = millis();
+    if (currentMillis - startMillis >= duration){
+      doing = false;
+      (*function)();
+      }
+    }
+   
   }
