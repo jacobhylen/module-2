@@ -73,7 +73,7 @@ void compose() {
   case ON:
     plot("ON", brightness);
     brightness = 255;
-      if (currentMillis - startMillis >= random(500)){ 
+      if (currentMillis - startMillis >= random(1000)){ 
       changeState(OFF);
       }
     break;
@@ -81,7 +81,7 @@ void compose() {
   case OFF:
     plot("OFF", brightness);
     brightness = 50;
-    if (currentMillis - startMillis >= random(500)){
+    if (currentMillis - startMillis >= random(700)){
       changeState(ON);
       }
     break;
