@@ -28,106 +28,110 @@ void loop() {
 }
 
 void compose() {
-  // this is a state machine which allows us to decouple the various operations from timed loops. 
+  // this is a state machine which allows us to decouple the various operations from timed loops.
   // instead we just switch from state to state when particular conditions are met.
   // we switch states by calling the changeState() function.
-  
-  switch (ledState){
 
-  case INCREASE:
-  changeState(ON);
-    brightness = increase_brightness(brightness, 1);
+  switch (ledState) {
 
-    plot("INCREASING", brightness);
-        
-    if (brightness > 250){
-      //ledState = WAVE;
-      changeState(WAVE);
-      }
-    break;
-   
-  case DECREASE:
-    brightness = decrease_brightness(brightness, 0.5);
-    plot("DECREASING", brightness);
-      if (brightness == 0){
-      changeState(OFF);
-      }
-     break;
-
-  case WAVE:
-    plot("WAVE", brightness);
-    
-    brightness = sinewave(1000,256,0); // you can tweak the parameters of the sinewave
-    analogWrite(ledPin, brightness);
-    
-    if (currentMillis - startMillis >= 5000){ //change state after 5 secs by comparing the time elapsed since we last change state
-      changeState(DECREASE);
-      }
-    break;
-    
-  case STAY:
-    plot("STAY", brightness);
-    brightness = brightness;
-    break;
-
-  case ON:
-    plot("ON", brightness);
-    brightness = 50 + brightnessIterator;
-    
-
-    if (currentMillis - startMillis >= 1000){
-      changeState(OFF);
-      brightnessIterator = brightnessIterator + 50;
-      }
-    if (brightnessIterator >= 200){
-      brightnessIterator = 0;
-    }
-   
-    break;
-
-  case OFF:
-    plot("OFF", brightness);
-    brightness = 0;
-    if (currentMillis - startMillis >= 1000){
+    case INCREASE:
       changeState(ON);
+      brightness = increase_brightness(brightness, 1);
+
+      plot("INCREASING", brightness);
+
+      if (brightness > 250) {
+        //ledState = WAVE;
+        changeState(WAVE);
       }
-    break;
+      break;
+
+    case DECREASE:
+      brightness = decrease_brightness(brightness, 0.5);
+      plot("DECREASING", brightness);
+      if (brightness == 0) {
+        changeState(OFF);
+      }
+      break;
+
+    case WAVE:
+      plot("WAVE", brightness);
+
+      brightness = sinewave(1000, 256, 0); // you can tweak the parameters of the sinewave
+      analogWrite(ledPin, brightness);
+
+      if (currentMillis - startMillis >= 5000) { //change state after 5 secs by comparing the time elapsed since we last change state
+        changeState(DECREASE);
+      }
+      break;
+
+    case STAY:
+      plot("STAY", brightness);
+      brightness = brightness;
+      break;
+
+    case ON:
+      plot("ON", brightness);
+      brightness = 30 + brightnessIterator;
+
+
+      if (currentMillis - startMillis >= 300) {
+        changeState(OFF);
+
+
+        brightnessIterator = brightnessIterator + 80;
+
+
+      }
+      if (brightnessIterator >= 230) {
+        brightnessIterator = 0;
+      }
+
+      break;
+
+    case OFF:
+      plot("OFF", brightness);
+      brightness = 0;
+      if (currentMillis - startMillis >= 100) {
+        changeState(ON);
+      }
+      break;
   }
 }
 
-void changeState(ledStates newState){
-    // call to change state, will keep track of time since last state
-    startMillis = millis();
-    ledState = newState;
-  }
-  
-void plot(char *state, int brightness){
-    // use this function to plot a graph.
-    // it will normalize the auto-scaling plotter
+void changeState(ledStates newState) {
+  // call to change state, will keep track of time since last state
+  startMillis = millis();
+  ledState = newState;
+}
 
-    if ((p % plotFrequency) == 0){
-      Serial.print(state);
-      Serial.print(", ");
-      Serial.print(brightness);
-      Serial.println(", 0, 300");
-    }
-    p++;
-  }
+void plot(char *state, int brightness) {
+  // use this function to plot a graph.
+  // it will normalize the auto-scaling plotter
 
-int increase_brightness (int brightness, float velocity){
-    return brightness = brightness + 1 * velocity;
+  if ((p % plotFrequency) == 0) {
+    Serial.print(state);
+    Serial.print(", ");
+    Serial.print(brightness);
+    Serial.println(", 0, 300");
   }
+  p++;
+}
 
-int decrease_brightness (int brightness, float velocity){
-    return brightness = brightness - 1 * velocity;
-  }
+int increase_brightness (int brightness, float velocity) {
+  return brightness = brightness + 1 * velocity;
+}
 
-int sinewave(float duration, float amplitude, int offset){
-    // Generate a sine oscillation, return a number.
-    // In case you are using this for analogWrite, make sure the amplitude does not exceed 256
-    float period = millis()/duration; // Duration in ms determines the wavelength.
-    float midpoint = amplitude / 2; // set the midpoint of the wave at half the amplitude so there are no negative numbers
-    int value = midpoint + midpoint * sin ( period * 2.0 * PI );
-    value = value + offset; //offset allows you to move the wave up and down on the Y-axis. Should not exceed the value of amplitude to prevent clipping.
-    return value;
-  }
+int decrease_brightness (int brightness, float velocity) {
+  return brightness = brightness - 1 * velocity;
+}
+
+int sinewave(float duration, float amplitude, int offset) {
+  // Generate a sine oscillation, return a number.
+  // In case you are using this for analogWrite, make sure the amplitude does not exceed 256
+  float period = millis() / duration; // Duration in ms determines the wavelength.
+  float midpoint = amplitude / 2; // set the midpoint of the wave at half the amplitude so there are no negative numbers
+  int value = midpoint + midpoint * sin ( period * 2.0 * PI );
+  value = value + offset; //offset allows you to move the wave up and down on the Y-axis. Should not exceed the value of amplitude to prevent clipping.
+  return value;
+}
