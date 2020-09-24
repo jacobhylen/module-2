@@ -1,19 +1,19 @@
- enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON}; // Here we make nicknames for the different states our program supports.
+enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON}; // Here we make nicknames for the different states our program supports.
 enum ledStates ledState; // We define 'ledState' as type ledStates'
 enum ledStates previousLedState = ledState;
 
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
 
-int counter = 0;
-int skipCounter = 0;
-int pauseAdd =0;
-
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
 int ledPin = 9; // we use pin 9 for PWM
 int p = 0; // use to keep track how often we plot
 int plotFrequency = 3; // how often we plot, every Nth time.
+
+int iteratedDuration = 5000;
+
+float counter = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -27,7 +27,6 @@ void loop() {
   delay(10);
   analogWrite(ledPin, brightness);
   currentMillis = millis(); //store the current time since the program started
- 
 }
 
 void compose() {
@@ -37,59 +36,41 @@ void compose() {
   
   switch (ledState){
 
-
-  
   case INCREASE:
+  changeState(WAVE);
+    brightness = increase_brightness(brightness, 1);
 
-    if(brightness < 250){
-    brightness = increase_brightness(brightness, 12);
-    } else if (brightness>= 250){
-      counter = counter + 1;
-    } 
-    
-    if (counter >= 10){
-      changeState(DECREASE);
-      counter = 0;
-      skipCounter = skipCounter +1;
-    }
-    if (skipCounter == 3){
-      pauseAdd = 40;
-      skipCounter = 0;
-    } else if (skipCounter<3){
-      pauseAdd=0;
-    }
     plot("INCREASING", brightness);
         
-    
+    if (brightness > 250){
+      //ledState = WAVE;
+      changeState(WAVE);
+      }
     break;
    
   case DECREASE:
-  
-    brightness = decrease_brightness(brightness, 125);
-  
-    
-      if (brightness <= 0){
-        counter = counter +1;
-      brightness = 0;
+    brightness = decrease_brightness(brightness, 0.5);
+    plot("DECREASING", brightness);
+      if (brightness == 0){
+      changeState(OFF);
       }
-      if (counter >= 10 + pauseAdd){
-        changeState(INCREASE);
-        counter = 0;
-      }
-
-      
-      plot("DECREASING", brightness);
      break;
 
   case WAVE:
     plot("WAVE", brightness);
     
-    brightness = sinewave(1000,256,0); // you can tweak the parameters of the sinewave
+    brightness = sinewave(iteratedDuration,256,0); // you can tweak the parameters of the sinewave
     analogWrite(ledPin, brightness);
+
+  if(iteratedDuration >= 100){
+    iteratedDuration = iteratedDuration - counter;
+    counter = counter + 0.0001;
+  }
+
+ 
+
     
-    if (currentMillis - startMillis >= 5000){ //change state after 5 secs by comparing the time elapsed since we last change state
-      changeState(DECREASE);
-      }
+  changeState(WAVE);
     break;
     
   case STAY:
@@ -100,19 +81,15 @@ void compose() {
   case ON:
     plot("ON", brightness);
     brightness = 255;
-      if (currentMillis - startMillis >= random(10000)){ 
-      changeState(OFF);
-      }
     break;
 
   case OFF:
     plot("OFF", brightness);
-    brightness = 50;
-    if (currentMillis - startMillis >= random(700)){
-      changeState(ON);
+    brightness = 0;
+    if (currentMillis - startMillis >= 1000){
+      changeState(INCREASE);
       }
     break;
-
   }
 }
 
