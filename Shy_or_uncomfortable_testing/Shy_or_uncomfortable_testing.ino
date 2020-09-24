@@ -1,4 +1,4 @@
-          enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON}; // Here we make nicknames for the different states our program supports.
+enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON}; // Here we make nicknames for the different states our program supports.
 enum ledStates ledState; // We define 'ledState' as type ledStates'
 enum ledStates previousLedState = ledState;
 
@@ -35,7 +35,7 @@ void compose() {
 
   
   case INCREASE:
-    changeState(ON);
+  
     brightness = increase_brightness(brightness, 4);
 
     plot("INCREASING", brightness);
