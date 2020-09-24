@@ -5,6 +5,10 @@ enum ledStates previousLedState = ledState;
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
 
+int counter = 0;
+int skipCounter = 0;
+int pauseAdd =0;
+
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
 int ledPin = 9; // we use pin 9 for PWM
@@ -23,6 +27,7 @@ void loop() {
   delay(10);
   analogWrite(ledPin, brightness);
   currentMillis = millis(); //store the current time since the program started
+ 
 }
 
 void compose() {
@@ -35,23 +40,45 @@ void compose() {
 
   
   case INCREASE:
-  changeState(ON);
-    brightness = increase_brightness(brightness, 1);
 
+    if(brightness < 250){
+    brightness = increase_brightness(brightness, 125);
+    } else if (brightness>= 250){
+      counter = counter + 1;
+    } 
+    
+    if (counter >= 10){
+      changeState(DECREASE);
+      counter = 0;
+      skipCounter = skipCounter +1;
+    }
+    if (skipCounter == 2){
+      pauseAdd = 40;
+      skipCounter = 0;
+    } else if (skipCounter<3){
+      pauseAdd=0;
+    }
     plot("INCREASING", brightness);
         
-    if (brightness > 250){
-      //ledState = WAVE;
-      changeState(WAVE);
-      }
+    
     break;
    
   case DECREASE:
-    brightness = decrease_brightness(brightness, 0.5);
-    plot("DECREASING", brightness);
-      if (brightness == 0){
-      changeState(OFF);
+  
+    brightness = decrease_brightness(brightness, 125);
+  
+    
+      if (brightness <= 0){
+        counter = counter +1;
+      brightness = 0;
       }
+      if (counter >= 10 + pauseAdd){
+        changeState(INCREASE);
+        counter = 0;
+      }
+
+      
+      plot("DECREASING", brightness);
      break;
 
   case WAVE:
@@ -73,7 +100,7 @@ void compose() {
   case ON:
     plot("ON", brightness);
     brightness = 255;
-      if (currentMillis - startMillis >= random(1000)){ 
+      if (currentMillis - startMillis >= random(10000)){ 
       changeState(OFF);
       }
     break;
@@ -85,6 +112,7 @@ void compose() {
       changeState(ON);
       }
     break;
+
   }
 }
 
