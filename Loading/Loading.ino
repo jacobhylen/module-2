@@ -74,10 +74,8 @@ void compose() {
       plot("ON", brightness);
       brightness = 30 + brightnessIterator;
 
-
       if (currentMillis - startMillis >= 300) {
         changeState(OFF);
-
 
         brightnessIterator = brightnessIterator + 80;
 
@@ -92,7 +90,7 @@ void compose() {
     case OFF:
       plot("OFF", brightness);
       brightness = 0;
-      if (currentMillis - startMillis >= 100) {
+      if (currentMillis - startMillis >= 0) {
         changeState(ON);
       }
       break;

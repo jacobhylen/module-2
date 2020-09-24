@@ -42,7 +42,7 @@ void compose() {
   case INCREASE:
 
     if(brightness < 250){
-    brightness = increase_brightness(brightness, 12);
+    brightness = increase_brightness(brightness, 125);
     } else if (brightness>= 250){
       counter = counter + 1;
     } 
