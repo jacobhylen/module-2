@@ -17,6 +17,9 @@ bool flag2 = false;
 const int inputPin3 (2);
 bool flag3 = false;
 
+const int pirPin (6);
+bool flagPir = false;
+
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
 int ledPin = 9; // we use pin 9 for PWM
@@ -30,6 +33,7 @@ void setup() {
   pinMode(inputPin1, INPUT);
   pinMode(inputPin2, INPUT);
   pinMode(inputPin3, INPUT);
+  pinMode(pirPin, INPUT);
   Serial.begin(9600); // initiate the Serial monitor so we can use the Serial Plotter to graph our patterns
 }
 
@@ -41,10 +45,10 @@ void loop() {
   currentMillis = millis(); //store the current time since the program started
 
   buttonState1 = digitalRead(7);
-  if(buttonState1 == HIGH){
+  if(digitalRead(pirPin) == HIGH){
     Serial.print("HIGH");
   }
-  if(buttonState1 == LOW){
+  if(digitalRead(pirPin) == LOW){
     Serial.print("LOW");
   }
 }
@@ -71,6 +75,10 @@ void compose() {
   if(digitalRead(2) == HIGH && flag3 == false){
     errorCounter = errorCounter + 1;
     flag3 = true; 
+  }
+    if(digitalRead(pirPin) == HIGH && flagPir == false){
+    errorCounter = errorCounter + 1;
+    flagPir = true;
   }
 
   if(errorCounter > 0){
@@ -121,6 +129,12 @@ void compose() {
     errorCounter = errorCounter -1;
     flag3 = false;
   }
+   if(digitalRead(pirPin) == LOW && flagPir == true){
+    errorCounter = errorCounter - 1;
+    flagPir = false;
+  }
+
+  
     if(digitalRead(7) == HIGH && flag1 == false){
     errorCounter = errorCounter + 1;
     flag1 = true;
@@ -133,6 +147,10 @@ void compose() {
   if(digitalRead(2) == HIGH && flag3 == false){
     errorCounter = errorCounter + 1;
     flag3 = true; 
+  }
+   if(digitalRead(pirPin) == HIGH && flagPir == false){
+    errorCounter = errorCounter + 1;
+    flagPir = true;
   }
 
  if(errorCounter == 0){
@@ -155,15 +173,38 @@ void compose() {
       changeState(OFF);
       } 
     }
+     if(errorCounter == 4){
+      if (currentMillis - startMillis >= 50 + random(-40,100)){ 
+      changeState(OFF);
+      } 
+    }
+    
     
     break;
 
   case OFF:
     plot("OFF", brightness);
     brightness = 50;
-    if (currentMillis - startMillis >= random(10000)/(errorCounter*3)){
+     if(errorCounter == 1){
+      if (currentMillis - startMillis >= 1000 + random(-400, 400)){ 
       changeState(ON);
-      }
+      } 
+    }
+     if(errorCounter == 2){
+      if (currentMillis - startMillis >= 500 + random(-200, 200)){ 
+      changeState(ON);
+      } 
+    }
+     if(errorCounter == 3){
+      if (currentMillis - startMillis >= 200 + random(-150,150)){ 
+      changeState(ON);
+      } 
+    }
+     if(errorCounter == 4){
+      if (currentMillis - startMillis >= 50 + random(-40,100)){ 
+      changeState(ON);
+      } 
+    }
     break;
 
   }
