@@ -13,7 +13,7 @@ int plotFrequency = 3; // how often we plot, every Nth time.
 
 int iteratedDuration = 5000;
 
-float counter = 0;
+float counter = 1;
 
 void setup() {
   // put your setup code here, to run once:
@@ -59,18 +59,24 @@ void compose() {
   case WAVE:
     plot("WAVE", brightness);
     
-    brightness = sinewave(iteratedDuration,256,0); // you can tweak the parameters of the sinewave
-    analogWrite(ledPin, brightness);
+    
 
-  if(iteratedDuration >= 100){
+
     iteratedDuration = iteratedDuration - counter;
-    counter = counter + 0.0001;
-  }
+    if (iteratedDuration <= 1300){
+       counter = 0;
+       brightness = sinewave(1300,256,0); // you can tweak the parameters of the sinewave
+       analogWrite(ledPin, brightness);
+    } else{
+       brightness = sinewave(iteratedDuration,256,0); // you can tweak the parameters of the sinewave
+       analogWrite(ledPin, brightness);
+
+    }
 
  
 
     
-  changeState(WAVE);
+ 
     break;
     
   case STAY:
@@ -108,6 +114,7 @@ void plot(char *state, int brightness){
       Serial.print(", ");
       Serial.print(brightness);
       Serial.println(", 0, 300");
+      Serial.print(iteratedDuration);
     }
     p++;
   }

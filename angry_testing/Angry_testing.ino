@@ -5,6 +5,18 @@ enum ledStates previousLedState = ledState;
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
 
+int errorCounter = 0;
+
+const int inputPin1(7);
+int buttonState1 = 0;
+bool flag1 = false;
+
+const int inputPin2(3);
+bool flag2 = false;
+
+const int inputPin3 (2);
+bool flag3 = false;
+
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
 int ledPin = 9; // we use pin 9 for PWM
@@ -14,6 +26,10 @@ int plotFrequency = 3; // how often we plot, every Nth time.
 void setup() {
   // put your setup code here, to run once:
   pinMode(ledPin, OUTPUT); // set ledPin as an output.
+
+  pinMode(inputPin1, INPUT);
+  pinMode(inputPin2, INPUT);
+  pinMode(inputPin3, INPUT);
   Serial.begin(9600); // initiate the Serial monitor so we can use the Serial Plotter to graph our patterns
 }
 
@@ -23,6 +39,14 @@ void loop() {
   delay(10);
   analogWrite(ledPin, brightness);
   currentMillis = millis(); //store the current time since the program started
+
+  buttonState1 = digitalRead(7);
+  if(buttonState1 == HIGH){
+    Serial.print("HIGH");
+  }
+  if(buttonState1 == LOW){
+    Serial.print("LOW");
+  }
 }
 
 void compose() {
@@ -35,14 +59,28 @@ void compose() {
 
   
   case INCREASE:
+  if(digitalRead(7) == HIGH && flag1 == false){
+    errorCounter = errorCounter + 1;
+    flag1 = true;
+  }
+
+  if(digitalRead(3) == HIGH && flag2 == false){
+    errorCounter = errorCounter + 1;
+    flag2 = true; 
+  }
+  if(digitalRead(2) == HIGH && flag3 == false){
+    errorCounter = errorCounter + 1;
+    flag3 = true; 
+  }
+
+  if(errorCounter > 0){
     changeState(ON);
-    brightness = increase_brightness(brightness, 4);
+  }
+    brightness = 255;
 
     plot("INCREASING", brightness);
         
-     if (brightness >= 250||currentMillis - startMillis >= random(1000)){
-      changeState(DECREASE);
-      }
+   
     break;
    
   case DECREASE:
@@ -71,17 +109,59 @@ void compose() {
     break;
 
   case ON:
+  if(digitalRead(7) == LOW && flag1 == true){
+    errorCounter = errorCounter -1;
+    flag1 = false;
+  }
+  if(digitalRead(3) == LOW && flag2 == true){
+    errorCounter = errorCounter -1;
+    flag2 = false;
+  }
+  if(digitalRead(2) == LOW && flag3 == true){
+    errorCounter = errorCounter -1;
+    flag3 = false;
+  }
+    if(digitalRead(7) == HIGH && flag1 == false){
+    errorCounter = errorCounter + 1;
+    flag1 = true;
+  }
+
+  if(digitalRead(3) == HIGH && flag2 == false){
+    errorCounter = errorCounter + 1;
+    flag2 = true; 
+  }
+  if(digitalRead(2) == HIGH && flag3 == false){
+    errorCounter = errorCounter + 1;
+    flag3 = true; 
+  }
+
+ if(errorCounter == 0){
+  changeState(INCREASE);
+ }
     plot("ON", brightness);
     brightness = 255;
-      if (currentMillis - startMillis >= random(700)){ 
+    if(errorCounter == 1){
+      if (currentMillis - startMillis >= 1000 + random(-200, 200)){ 
       changeState(OFF);
-      }
+      } 
+    }
+     if(errorCounter == 2){
+      if (currentMillis - startMillis >= 500 + random(-100, 100)){ 
+      changeState(OFF);
+      } 
+    }
+     if(errorCounter == 3){
+      if (currentMillis - startMillis >= 200 + random(-100,100)){ 
+      changeState(OFF);
+      } 
+    }
+    
     break;
 
   case OFF:
     plot("OFF", brightness);
     brightness = 50;
-    if (currentMillis - startMillis >= random(700)){
+    if (currentMillis - startMillis >= random(10000)/(errorCounter*3)){
       changeState(ON);
       }
     break;
@@ -104,6 +184,7 @@ void plot(char *state, int brightness){
       Serial.print(", ");
       Serial.print(brightness);
       Serial.println(", 0, 300");
+      Serial.print(errorCounter);
     }
     p++;
   }
