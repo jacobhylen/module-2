@@ -1,10 +1,9 @@
-          enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON, RELIEVEDINC, RELIEVEDDEC}; // Here we make nicknames for the different states our program supports.
+          enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON}; // Here we make nicknames for the different states our program supports.
 enum ledStates ledState; // We define 'ledState' as type ledStates'
 enum ledStates previousLedState = ledState;
 
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
-unsigned long relievedMillis = 0;
 
 int errorCounter = 0;
 
@@ -18,23 +17,20 @@ bool flag2 = false;
 const int inputPin3 (2);
 bool flag3 = false;
 
+const int pirPin (6);
+bool flagPir = false;
 
 const int LDRpin1 = A4;
 float LDRval1 = 0;
-bool LDRflag1 = false;
-bool LDRtrigger1 = false;
 
 const int LDRpin2 = A5;
 float LDRval2 = 0;
-bool LDRflag2 = false;
-bool LDRtrigger2 = false;
 
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
 int ledPin = 9; // we use pin 9 for PWM
 int p = 0; // use to keep track how often we plot
 int plotFrequency = 3; // how often we plot, every Nth time.
-
 
 void setup() {
   // put your setup code here, to run once:
@@ -43,7 +39,7 @@ void setup() {
   pinMode(inputPin1, INPUT);
   pinMode(inputPin2, INPUT);
   pinMode(inputPin3, INPUT);
-  
+  pinMode(pirPin, INPUT);
   pinMode(LDRpin1, INPUT);
   pinMode(LDRpin2, INPUT);
   Serial.begin(9600); // initiate the Serial monitor so we can use the Serial Plotter to graph our patterns
@@ -57,27 +53,27 @@ void loop() {
   currentMillis = millis(); //store the current time since the program started
 
   buttonState1 = digitalRead(7);
-  
- 
+  if(digitalRead(pirPin) == HIGH){
+    Serial.print("HIGH");
+  }
+  if(digitalRead(pirPin) == LOW){
+    Serial.print("LOW");
+  }
   LDRval1 = analogRead(LDRpin1);
   LDRval2 = analogRead(LDRpin2); 
 
-  if(LDRval1 < 60){
+  //if( LDRval1 > LDRval2){
+  //  Serial.print("left!");
+  // } else {
+  //  Serial.print("right!");
+  // }
+
+  if(LDRval1 < 80){
     Serial.print("left!");
-    LDRflag1 = true;
-  } else {
-    LDRflag1 = false;
   }
-  if (LDRval2 < 60){
+  if (LDRval2 < 80){
     Serial.print("right!");
-    LDRflag2 = true;
-  }else if (LDRflag2 = true && LDRval2 <= 60 ){
-     LDRtrigger2 = true;
-     LDRflag2 = false;
-     Serial.print("triggered");
-     
-  } 
-  
+  }
   
 }
 
@@ -91,7 +87,6 @@ void compose() {
 
   
   case INCREASE:
-  
   if(digitalRead(7) == HIGH && flag1 == false){
     errorCounter = errorCounter + 1;
     flag1 = true;
@@ -105,7 +100,10 @@ void compose() {
     errorCounter = errorCounter + 1;
     flag3 = true; 
   }
-  
+    if(digitalRead(pirPin) == HIGH && flagPir == false){
+    errorCounter = errorCounter + 1;
+    flagPir = true;
+  }
 
   if(errorCounter > 0){
     changeState(ON);
@@ -146,19 +144,19 @@ void compose() {
   if(digitalRead(7) == LOW && flag1 == true){
     errorCounter = errorCounter -1;
     flag1 = false;
-    changeState(RELIEVEDINC);
   }
   if(digitalRead(3) == LOW && flag2 == true){
     errorCounter = errorCounter -1;
     flag2 = false;
-    changeState(RELIEVEDINC);
   }
   if(digitalRead(2) == LOW && flag3 == true){
     errorCounter = errorCounter -1;
     flag3 = false;
-    changeState(RELIEVEDINC);
   }
-   
+   if(digitalRead(pirPin) == LOW && flagPir == true){
+    errorCounter = errorCounter - 1;
+    flagPir = false;
+  }
 
   
     if(digitalRead(7) == HIGH && flag1 == false){
@@ -174,14 +172,13 @@ void compose() {
     errorCounter = errorCounter + 1;
     flag3 = true; 
   }
-   
+   if(digitalRead(pirPin) == HIGH && flagPir == false){
+    errorCounter = errorCounter + 1;
+    flagPir = true;
+  }
 
  if(errorCounter == 0){
-  if(LDRtrigger2 = true){
-    LDRtrigger2 = false;
-    changeState(RELIEVEDINC);
-  }
-  changeState(ON);
+  changeState(INCREASE);
  }
     plot("ON", brightness);
     brightness = 255;
@@ -200,8 +197,13 @@ void compose() {
       changeState(OFF);
       } 
     }
+     if(errorCounter == 4){
+      if (currentMillis - startMillis >= 50 + random(-40,100)){ 
+      changeState(OFF);
+      } 
+    }
     
-
+    
     break;
 
   case OFF:
@@ -222,40 +224,15 @@ void compose() {
       changeState(ON);
       } 
     }
-    
+     if(errorCounter == 4){
+      if (currentMillis - startMillis >= 50 + random(-40,100)){ 
+      changeState(ON);
+      } 
+    }
     break;
 
-
-  case RELIEVEDINC:
-    if (relievedMillis == 0){
-      relievedMillis = millis();
-    }
-  
-    brightness = increase_brightness(brightness, 4);
-
-    plot("INCREASING", brightness);
-        
-     if (brightness >= 250||currentMillis - startMillis >= random(1000)){
-      changeState(RELIEVEDDEC);
-      }
-
-      if(currentMillis - relievedMillis >= 2000){
-        relievedMillis = 0;
-        changeState(ON);
-      }
-  break;
-
-  case RELIEVEDDEC:
-    brightness = decrease_brightness(brightness, 4);
-  
-    plot("DECREASING", brightness);
-      if (brightness == 0||currentMillis - startMillis >= random(1000)){
-      changeState(RELIEVEDINC);
-      }
-  break;
   }
 }
-
 
 void changeState(ledStates newState){
     // call to change state, will keep track of time since last state
