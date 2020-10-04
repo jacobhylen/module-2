@@ -1,16 +1,13 @@
-enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON}; // Here we make nicknames for the different states our program supports.
+enum ledStates {INCREASE, DECREASE, STAY, WAVE, OFF, ON, RELIEVEDINC, RELIEVEDDEC}; // Here we make nicknames for the different states our program supports.
 enum ledStates ledState; // We define 'ledState' as type ledStates'
 enum ledStates previousLedState = ledState;
 
 
 int errorCounter = 0;
-bool inPinCheck1 = false;
-bool inPinCheck2 = false;
-bool inPinCheck3 = false;
-bool inPinCheck4 = false;
 
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
+unsigned long relievedMillis = 0;
 
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
@@ -18,14 +15,20 @@ int ledPin = 9; // we use pin 9 for PWM
 int p = 0; // use to keep track how often we plot
 int plotFrequency = 3; // how often we plot, every Nth time.
 
+int hasBeenTrgrd = 0;
+
+const int LDRpin1 = A4;
+float LDRval1 = 0;
+
+const int LDRpin2 = A5;
+float LDRval2 = 0;
+
 void setup() {
   // put your setup code here, to run once:
   pinMode(ledPin, OUTPUT); // set ledPin as an output.
+  pinMode(LDRpin1, INPUT);
+  pinMode(LDRpin2, INPUT);
 
-  pinMode(7, INPUT);
-  pinMode(6, INPUT);
-  pinMode(5, INPUT);
-  pinMode(4, INPUT);
   Serial.begin(9600); // initiate the Serial monitor so we can use the Serial Plotter to graph our patterns
 }
 
@@ -34,29 +37,12 @@ void loop() {
   compose();
   delay(10);
 
-  if (digitalRead(7)== LOW); {
-        errorCounter = errorCounter + 1;
-        inPinCheck1 = true;
-        Serial.print(digitalRead(7));
-      }
-      if (digitalRead(6) == HIGH && inPinCheck2 == false); {
-        errorCounter = errorCounter + 1;
-        inPinCheck2 = true;
-      }
-      if (digitalRead(5) == HIGH && inPinCheck3 == false); {
-        errorCounter = errorCounter + 1;
-        inPinCheck3 = true;
-      }
-      if (digitalRead(4) == HIGH && inPinCheck4 == false); {
-        errorCounter = errorCounter + 1;
-        inPinCheck4 = true;
-      }
+ 
 
-      
   analogWrite(ledPin, brightness);
   currentMillis = millis(); //store the current time since the program started
 
-  
+
 }
 
 void compose() {
@@ -68,7 +54,7 @@ void compose() {
 
   switch (ledState) {
 
-      
+
 
 
 
@@ -77,10 +63,12 @@ void compose() {
       brightness = 255;
 
       plot("INCREASING", brightness);
-    
 
-      Serial.print(digitalRead(13));
-      if (errorCounter > 0) {
+      LDRval1 = analogRead(LDRpin1);
+      LDRval2 = analogRead(LDRpin2);
+       
+      if (LDRval1 < 50 || LDRval2 < 50) {
+        hasBeenTrgrd = 1;
         changeState(ON);
       }
       break;
@@ -111,24 +99,57 @@ void compose() {
       break;
 
     case ON:
-  //Serial.print(errorCounter);
-     
+      //Serial.print(errorCounter);
+
       plot("ON", brightness);
       brightness = 255;
-      
-      if (currentMillis - startMillis >= random(700)) {
+      LDRval1 = analogRead(LDRpin1);
+      if (currentMillis - startMillis >= ((LDRval1 * 10)+(LDRval2 * 10))/2) {
         changeState(OFF);
+      }
+      if ((LDRval1 + LDRval2)/2 > 55 && hasBeenTrgrd == 1) {
+        changeState(RELIEVEDINC);
+        hasBeenTrgrd = 0;
       }
       break;
 
     case OFF:
       plot("OFF", brightness);
       brightness = 50;
-      if (currentMillis - startMillis >= random(700)) {
+      if (currentMillis - startMillis >= ((LDRval1 * 10)+(LDRval2 * 10))/2) {
         changeState(ON);
       }
       break;
+      
+    case RELIEVEDINC:
+    plot("RELIEVEDINC", brightness);
+      if (relievedMillis == 0) {
+        relievedMillis = millis();
+      }
 
+      brightness = increase_brightness(brightness, 4);
+
+      plot("INCREASING", brightness);
+
+      if (brightness >= 250 || currentMillis - startMillis >= random(1000)) {
+        changeState(RELIEVEDDEC);
+      }
+
+      if (currentMillis - relievedMillis >= 2000) {
+        relievedMillis = 0;
+        changeState(INCREASE);
+      }
+      break;
+
+    case RELIEVEDDEC:
+      plot("RELIEVEDDEC", brightness);
+      brightness = decrease_brightness(brightness, 4);
+
+      plot("DECREASING", brightness);
+      if (brightness == 0 || currentMillis - startMillis >= random(1000)) {
+        changeState(RELIEVEDINC);
+      }
+      break;
   }
 }
 
@@ -147,6 +168,9 @@ void plot(char *state, int brightness) {
     Serial.print(", ");
     Serial.print(brightness);
     Serial.println(", 0, 300");
+    Serial.print(LDRval1);
+    Serial.print(LDRval2);
+    Serial.print(hasBeenTrgrd);
   }
   p++;
 }

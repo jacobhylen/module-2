@@ -177,10 +177,7 @@ void compose() {
    
 
  if(errorCounter == 0){
-  if(LDRtrigger2 = true){
-    LDRtrigger2 = false;
-    changeState(RELIEVEDINC);
-  }
+  
   changeState(ON);
  }
     plot("ON", brightness);
