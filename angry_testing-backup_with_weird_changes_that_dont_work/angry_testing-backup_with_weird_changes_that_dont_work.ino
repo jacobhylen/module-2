@@ -23,11 +23,13 @@ float LDRval1 = 0;
 const int LDRpin2 = A5;
 float LDRval2 = 0;
 
+int errorThreshold = 85;
 void setup() {
   // put your setup code here, to run once:
   pinMode(ledPin, OUTPUT); // set ledPin as an output.
   pinMode(LDRpin1, INPUT);
   pinMode(LDRpin2, INPUT);
+ 
 
   Serial.begin(9600); // initiate the Serial monitor so we can use the Serial Plotter to graph our patterns
 }
@@ -37,12 +39,8 @@ void loop() {
   compose();
   delay(10);
 
- 
-
   analogWrite(ledPin, brightness);
   currentMillis = millis(); //store the current time since the program started
-
-
 }
 
 void compose() {
@@ -64,10 +62,10 @@ void compose() {
 
       plot("INCREASING", brightness);
 
-      LDRval1 = analogRead(LDRpin1);
-      LDRval2 = analogRead(LDRpin2);
+      LDRcalc();
+      
        
-      if (LDRval1 < 50 || LDRval2 < 50) {
+      if (LDRval1 < errorThreshold || LDRval2 < errorThreshold) {
         hasBeenTrgrd = 1;
         changeState(ON);
       }
@@ -103,11 +101,11 @@ void compose() {
 
       plot("ON", brightness);
       brightness = 255;
-      LDRval1 = analogRead(LDRpin1);
+       LDRcalc();
       if (currentMillis - startMillis >= ((LDRval1 * 10)+(LDRval2 * 10))/2) {
         changeState(OFF);
       }
-      if ((LDRval1 + LDRval2)/2 > 55 && hasBeenTrgrd == 1) {
+      if ((LDRval1 + LDRval2)/2 > errorThreshold && hasBeenTrgrd == 1) {
         changeState(RELIEVEDINC);
         hasBeenTrgrd = 0;
       }
@@ -116,6 +114,8 @@ void compose() {
     case OFF:
       plot("OFF", brightness);
       brightness = 50;
+      LDRcalc();
+            
       if (currentMillis - startMillis >= ((LDRval1 * 10)+(LDRval2 * 10))/2) {
         changeState(ON);
       }
@@ -123,6 +123,9 @@ void compose() {
       
     case RELIEVEDINC:
     plot("RELIEVEDINC", brightness);
+
+    LDRcalc();
+     
       if (relievedMillis == 0) {
         relievedMillis = millis();
       }
@@ -145,6 +148,8 @@ void compose() {
       plot("RELIEVEDDEC", brightness);
       brightness = decrease_brightness(brightness, 4);
 
+       LDRcalc();
+            
       plot("DECREASING", brightness);
       if (brightness == 0 || currentMillis - startMillis >= random(1000)) {
         changeState(RELIEVEDINC);
@@ -159,6 +164,16 @@ void changeState(ledStates newState) {
   ledState = newState;
 }
 
+void LDRcalc(){
+   LDRval1 = analogRead(LDRpin1);
+   LDRval2 = analogRead(LDRpin2);
+   if(hasBeenTrgrd = 1){
+    errorThreshold = 100;
+   } else {
+    errorThreshold = 85;
+   }
+}
+
 void plot(char *state, int brightness) {
   // use this function to plot a graph.
   // it will normalize the auto-scaling plotter
@@ -168,9 +183,12 @@ void plot(char *state, int brightness) {
     Serial.print(", ");
     Serial.print(brightness);
     Serial.println(", 0, 300");
-    Serial.print(LDRval1);
-    Serial.print(LDRval2);
-    Serial.print(hasBeenTrgrd);
+   // Serial.print(LDRval1);
+  //  Serial.print(LDRval2);
+  //  Serial.print(hasBeenTrgrd);
+    Serial.print((LDRval1+LDRval2)/2);
+      Serial.print(errorThreshold);
+      
   }
   p++;
 }
