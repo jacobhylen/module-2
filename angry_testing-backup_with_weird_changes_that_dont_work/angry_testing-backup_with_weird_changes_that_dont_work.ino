@@ -23,7 +23,7 @@ float LDRval1 = 0;
 const int LDRpin2 = A5;
 float LDRval2 = 0;
 
-int errorThreshold = 85;
+int errorThreshold = 450;
 void setup() {
   // put your setup code here, to run once:
   pinMode(ledPin, OUTPUT); // set ledPin as an output.
@@ -58,14 +58,20 @@ void compose() {
 
     case INCREASE:
 
-      brightness = 255;
+      if (brightness < 255){
+        brightness = increase_brightness(brightness, 4);
+      }else {
+        brightness = 255;
+      }
+      
+      
 
       plot("INCREASING", brightness);
 
       LDRcalc();
       
        
-      if (LDRval1 < errorThreshold || LDRval2 < errorThreshold) {
+      if ((LDRval1 + LDRval2)/2 < errorThreshold) {
         hasBeenTrgrd = 1;
         changeState(ON);
       }
@@ -102,7 +108,7 @@ void compose() {
       plot("ON", brightness);
       brightness = 255;
        LDRcalc();
-      if (currentMillis - startMillis >= ((LDRval1 * 10)+(LDRval2 * 10))/2) {
+      if (currentMillis - startMillis >= ((LDRval1 )+(LDRval2 ))/2) {
         changeState(OFF);
       }
       if ((LDRval1 + LDRval2)/2 > errorThreshold && hasBeenTrgrd == 1) {
@@ -116,7 +122,7 @@ void compose() {
       brightness = 50;
       LDRcalc();
             
-      if (currentMillis - startMillis >= ((LDRval1 * 10)+(LDRval2 * 10))/2) {
+      if (currentMillis - startMillis >= ((LDRval1 )+(LDRval2 ))/2) {
         changeState(ON);
       }
       break;
@@ -125,18 +131,12 @@ void compose() {
     plot("RELIEVEDINC", brightness);
 
     LDRcalc();
+
      
       if (relievedMillis == 0) {
         relievedMillis = millis();
       }
-
-      brightness = increase_brightness(brightness, 4);
-
-      plot("INCREASING", brightness);
-
-      if (brightness >= 250 || currentMillis - startMillis >= random(1000)) {
-        changeState(RELIEVEDDEC);
-      }
+        brightness = sinewave(1000, 255, 0);  
 
       if (currentMillis - relievedMillis >= 2000) {
         relievedMillis = 0;
@@ -168,9 +168,9 @@ void LDRcalc(){
    LDRval1 = analogRead(LDRpin1);
    LDRval2 = analogRead(LDRpin2);
    if(hasBeenTrgrd = 1){
-    errorThreshold = 100;
+    errorThreshold = 520;
    } else {
-    errorThreshold = 85;
+    errorThreshold = 450;
    }
 }
 
@@ -183,11 +183,11 @@ void plot(char *state, int brightness) {
     Serial.print(", ");
     Serial.print(brightness);
     Serial.println(", 0, 300");
-   // Serial.print(LDRval1);
-  //  Serial.print(LDRval2);
+    Serial.print(LDRval1);
+    Serial.print(LDRval2);
   //  Serial.print(hasBeenTrgrd);
     Serial.print((LDRval1+LDRval2)/2);
-      Serial.print(errorThreshold);
+    Serial.print(errorThreshold);
       
   }
   p++;
