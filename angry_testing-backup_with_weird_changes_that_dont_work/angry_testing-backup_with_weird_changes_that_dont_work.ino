@@ -8,6 +8,7 @@ int errorCounter = 0;
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
 unsigned long relievedMillis = 0;
+unsigned long angryMillis = 0;
 
 int brightness = 0; // our main variable for setting the brightness of the LED
 float velocity = 1.0; // the speed at which we change the brightness.
@@ -140,20 +141,24 @@ void compose() {
 
       if (currentMillis - relievedMillis >= 2000) {
         relievedMillis = 0;
-        changeState(INCREASE);
+        changeState(RELIEVEDDEC);
       }
       break;
 
     case RELIEVEDDEC:
       plot("RELIEVEDDEC", brightness);
-      brightness = decrease_brightness(brightness, 4);
+      LDRcalc();
 
-       LDRcalc();
-            
-      plot("DECREASING", brightness);
-      if (brightness == 0 || currentMillis - startMillis >= random(1000)) {
-        changeState(RELIEVEDINC);
-      }
+     if(angryMillis == 0){
+      angryMillis = millis();
+     }
+
+      brightness = sinewave(1000, 255, 0);
+      
+     if(currentMillis - startMillis >= currentMillis - angryMillis){
+      angryMillis = 0;
+      changeState(INCREASE);
+     }
       break;
   }
 }
